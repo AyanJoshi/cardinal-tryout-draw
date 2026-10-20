@@ -96,7 +96,7 @@ table.stand td.rank{color:var(--muted);width:1%}
   <header>
     <div class="eyebrow">Cardinal Badminton Club · Derby City selection</div>
     <h1>Tryout Draw</h1>
-    <p class="lede">Paste the names, draw the matchups, then enter scores at the court. Every match is best of 3 games to 15. Singles is winners-play-winners: round 1 is random, then each round pairs players with the same record, so nobody is knocked out. Men's and women's events run side by side on their own courts, and mixed doubles uses every court at the end. Standings update as you go, with a line at the selection cutoff.</p>
+    <p class="lede">Paste the names, draw the matchups, then enter scores at the court. Every match is best of 3 games to 15. Singles is winners-play-winners: round 1 is random, then each round pairs players with the same record, so nobody is knocked out. With an odd number of players, the lowest-ranked player who hasn't sat out yet gets the bye, which never counts as a win. Men's and women's events run side by side on their own courts, and mixed doubles uses every court at the end. Standings update as you go, with a line at the selection cutoff.</p>
   </header>
 
   <section class="setup" aria-label="Setup">
@@ -111,7 +111,8 @@ table.stand td.rank{color:var(--muted);width:1%}
     <div class="opts">
       <label for="menCourts">Men's courts<input id="menCourts" type="text" inputmode="numeric"></label>
       <label for="womenCourts">Women's courts<input id="womenCourts" type="text" inputmode="numeric"></label>
-      <label for="singlesRounds">Singles rounds<input id="singlesRounds" type="number" min="1" max="10" step="1"></label>
+      <label for="menSR">Men's singles rounds<input id="menSR" type="number" min="1" max="12" step="1"></label>
+      <label for="womenSR">Women's singles rounds<input id="womenSR" type="number" min="1" max="12" step="1"></label>
       <label for="rounds">Doubles rounds<input id="rounds" type="number" min="1" max="20" step="1"></label>
       <label for="mixedRounds">Mixed rounds<input id="mixedRounds" type="number" min="0" max="20" step="1"></label>
       <label for="menSpots">Men's spots<input id="menSpots" type="number" min="0" max="20" step="1"></label>
@@ -144,7 +145,7 @@ table.stand td.rank{color:var(--muted);width:1%}
   const defaults = {
     men: "Bharadhwaj\nAyan\nRanga\nHarsha\nNikhil",
     women: "Aashna\nAkshaya\nApeksha\nAdvika\nSreshta\nShikha\nMay\nBhavi\nAndrea",
-    menCourts: "1, 2, 3", womenCourts: "4, 5, 6", singlesRounds: 3, rounds: 3, mixedRounds: 3, menSpots: 4, womenSpots: 4,
+    menCourts: "1, 2", womenCourts: "3, 4, 5, 6", menSR: 5, womenSR: 4, rounds: 3, mixedRounds: 3, menSpots: 4, womenSpots: 4,
     seed: null, sections: [], scores: {}
   };
   function courtList(text){
@@ -230,8 +231,14 @@ table.stand td.rank{color:var(--muted);width:1%}
     }
     return null;
   }
+  function totalFor(sec){
+    const v = parseInt(sec.key === "ms" ? S.menSR : S.womenSR);
+    return Math.max(1, Math.min(12, v || sec.total || 1));
+  }
   function swissNext(sec){
     const rnd = (sec.round || 0) + 1;
+    const live = courtList(sec.key === "ms" ? S.menCourts : S.womenCourts);
+    if (live.length) sec.courts = live;
     const rng = mulberry32((S.seed || 1) + rnd * 7919 + sec.prefix.charCodeAt(0));
     const rec = swissRecords(sec);
     let order = shuffle(sec.players, rng);
@@ -330,10 +337,10 @@ table.stand td.rank{color:var(--muted);width:1%}
     const rng = mulberry32(seed);
     const cl = c => "Courts " + c.join(", ");
     const secs = [];
-    const sr = Math.max(1, Math.min(10, parseInt(S.singlesRounds) || 1));
     S.seed = seed; S.scores = {};
     const swiss = (key, title, players, courts, type) => {
-      const sec = { key, kind: "swiss", title, note: cl(courts) + " · winners play winners, " + sr + " rounds", players, courts, type, prefix: type, total: sr, round: 0, slots: [] };
+      const sec = { key, kind: "swiss", title, note: "", players, courts, type, prefix: type, total: 0, round: 0, slots: [] };
+      sec.total = totalFor(sec);
       swissNext(sec); return sec;
     };
     if (men.length >= 2 && mc.length) secs.push(swiss("ms", "Men's singles", men, mc, "MS"));
@@ -380,13 +387,16 @@ table.stand td.rank{color:var(--muted);width:1%}
   function render(){
     $("#men").value = S.men; $("#women").value = S.women;
     $("#menCourts").value = S.menCourts; $("#womenCourts").value = S.womenCourts;
-    $("#rounds").value = S.rounds; $("#mixedRounds").value = S.mixedRounds; $("#singlesRounds").value = S.singlesRounds;
+    $("#rounds").value = S.rounds; $("#mixedRounds").value = S.mixedRounds; $("#menSR").value = S.menSR; $("#womenSR").value = S.womenSR;
     $("#menSpots").value = S.menSpots; $("#womenSpots").value = S.womenSpots;
     $("#seedShow").textContent = S.seed == null ? "-" : S.seed;
     const host = $("#draws"); host.innerHTML = "";
     S.sections.forEach(sec => {
       const el = document.createElement("section"); el.className = "section";
-      let html = '<div class="section-head"><h2>' + esc(sec.title) + '</h2><p>' + esc(sec.note) + '</p></div>';
+      const note = sec.kind === "swiss"
+        ? "Courts " + sec.courts.join(", ") + " · winners play winners, " + totalFor(sec) + " rounds"
+        : sec.note;
+      let html = '<div class="section-head"><h2>' + esc(sec.title) + '</h2><p>' + esc(note) + '</p></div>';
       sec.slots.forEach(sl => {
         html += '<div class="slot"><div class="slot-head"><h3>' + esc(sl.label) + '</h3>' +
           (sl.sitting.length ? '<span class="sitting">Resting: ' + sl.sitting.map(esc).join(", ") + '</span>' : '') + '</div><div class="cards">';
@@ -412,7 +422,8 @@ table.stand td.rank{color:var(--muted);width:1%}
   }
 
   function nextHtml(sec){
-    if (sec.round >= sec.total) return '<span class="sitting">All ' + sec.total + ' rounds drawn.</span>';
+    const total = totalFor(sec);
+    if (sec.round >= total) return '<span class="sitting">All ' + total + ' rounds drawn. Raise the rounds above to add more.</span>';
     const done = roundDone(sec);
     return '<button type="button" class="' + (done ? "primary" : "") + '" data-next="' + sec.key + '"' + (done ? "" : ' aria-disabled="true"') + '>Draw round ' + (sec.round + 1) + '</button>' +
       '<span class="sitting">' + (done ? "Pairs players with the same record. No rematches." : "Enter every round " + sec.round + " score first.") + '</span>';
@@ -454,9 +465,10 @@ table.stand td.rank{color:var(--muted);width:1%}
   }
 
   // Inputs
-  ["men", "women", "menCourts", "womenCourts", "singlesRounds", "rounds", "mixedRounds", "menSpots", "womenSpots"].forEach(k => {
+  ["men", "women", "menCourts", "womenCourts", "menSR", "womenSR", "rounds", "mixedRounds", "menSpots", "womenSpots"].forEach(k => {
     $("#" + k).addEventListener("input", e => { S[k] = e.target.value; save(); if (k === "menSpots" || k === "womenSpots") standings(); });
   });
+  ["menSR", "womenSR"].forEach(k => $("#" + k).addEventListener("change", () => render()));
 
   $("#draws").addEventListener("input", e => {
     const t = e.target; if (!t.dataset.id) return;
