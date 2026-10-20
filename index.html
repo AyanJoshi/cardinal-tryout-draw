@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Randomized tryout matchups for Cardinal Badminton Club: winners-play-winners singles, rotating doubles and mixed, live scores and standings.">
+<meta name="description" content="Randomized tryout matchups for Cardinal Badminton Club: winners-play-winners singles, separate pools and draws for singles, doubles and mixed, live scores and standings.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}*,*::before,*::after{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Cardinal Tryout Draw</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: scoresheet clipboard. Setup strip on top, then draws as court cards, standings with a selection cutoff line. */
+/* Layout: scoresheet clipboard. Roster strip on top, then one block per event (pool, draw button, court cards), then standings with a selection cutoff line. */
 :root{
   --bg:#f3f5f1; --surface:#ffffff; --sunk:#eaeee8; --ink:#17201b; --muted:#5b6a62; --line:#d6ddd7;
   --accent:#b4122d; --accent-soft:rgba(180,18,45,.09); --court:#1d6a47; --court-soft:rgba(29,106,71,.10);
@@ -24,22 +24,23 @@
   --bg:#0f1512; --surface:#17201b; --sunk:#111915; --ink:#e6ece8; --muted:#94a49b; --line:#2b3631;
   --accent:#ff5d72; --accent-soft:rgba(255,93,114,.12); --court:#53c08d; --court-soft:rgba(83,192,141,.12); color-scheme:dark }
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
-.wrap{max-width:1100px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
-h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
+.wrap{max-width:1100px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+h1,h2,h3,h4{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
 h1{font-size:clamp(30px,5vw,42px);line-height:1}
-h2{font-size:26px;line-height:1.1}
+h2{font-size:30px;line-height:1.05}
+h3{font-size:22px;line-height:1.1}
+h4{font-size:18px;line-height:1.1}
 .eyebrow{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-.lede{color:var(--muted);max-width:62ch;margin:6px 0 0}
+.lede{color:var(--muted);max-width:66ch;margin:6px 0 0}
 header{display:grid;gap:4px}
 
-.setup{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:14px}
 .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .opts{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
 label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
 textarea,input[type=number],input[type=text]{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
 textarea{min-height:150px;resize:vertical;font-size:15px;color:var(--ink)}
 .opts input{width:96px}
-.check{display:flex;align-items:center;gap:8px;font-weight:500;color:var(--ink);font-size:14px;padding-bottom:9px}
 .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 button{font:600 15px var(--body);border-radius:6px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -48,13 +49,34 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .seedline{font-size:13px;color:var(--muted)}
 .seedline b{font-variant-numeric:tabular-nums;color:var(--ink)}
 .msg{font-size:13px;color:var(--accent);min-height:1em}
+.hint{font-size:13px;color:var(--muted);margin:0}
 
-.section{display:grid;gap:14px}
-.section-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
-.section-head p{margin:0;color:var(--muted);font-size:13px}
+.event{display:grid;gap:16px}
+.event-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.event-head p{margin:0;color:var(--muted);font-size:13px}
+.pool-group{display:grid;gap:6px}
+.pool-group > span{font-size:13px;font-weight:600;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+label.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 9px;font-size:14px;font-weight:500;color:var(--muted);background:var(--sunk);cursor:pointer;user-select:none}
+label.chip:has(input:checked){background:var(--court-soft);border-color:var(--court);color:var(--ink)}
+label.chip:has(input:focus-visible){outline:2px solid var(--court);outline-offset:2px}
+.chip input{accent-color:var(--court);margin:0;width:15px;height:15px}
+.pair{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 4px 3px 12px;font-size:14px;font-weight:500}
+.pair em{font-style:normal;color:var(--muted);font-size:12px}
+.pair button.x{padding:0 8px;border:0;background:transparent;font-size:18px;line-height:1.2;color:var(--muted)}
+.fixadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fixlab{font-size:13px;color:var(--muted);min-width:96px}
+select{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:140px}
+select:focus-visible{outline:2px solid var(--court);outline-offset:2px}
+.info{font-size:13px;color:var(--muted);margin:0}
+.info .stale{color:var(--accent);font-weight:600}
+.notyet{color:var(--muted);font-size:14px;margin:0}
+
+.sub{display:grid;gap:14px}
+.sub-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.sub-head p{margin:0;color:var(--muted);font-size:13px}
 .slot{display:grid;gap:10px}
 .slot-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
-.slot-head h3{font-size:19px}
 .sitting{font-size:13px;color:var(--muted)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;min-width:0}
@@ -69,37 +91,40 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .board tr.won td.name{color:var(--court);font-weight:700}
 .board tr.won td.name::after{content:" ✓";}
 .board tr.side-b td{border-top:1px solid var(--line)}
+.next{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.next button[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 
 .stand-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.wrap > *,.event > *,.stand-grid > *{min-width:0}
+#events{min-width:0}
 .table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 table.stand{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 table.stand th{font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--muted);text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 table.stand th:first-child,table.stand td:first-child{text-align:left}
 table.stand td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.stand td.na{color:var(--muted)}
 table.stand tr.in td{background:var(--court-soft)}
 table.stand tr.cut td{border-bottom:2px dashed var(--accent)}
 table.stand td.rank{color:var(--muted);width:1%}
 .stand-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
 .stand-title span{font-size:13px;color:var(--muted)}
 .empty{color:var(--muted);font-size:14px;padding:12px}
-.next{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.next button[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 .rules{font-size:13px;color:var(--muted);margin:0;max-width:75ch}
 
 @media (max-width:720px){ .setup-grid,.stand-grid{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+
 </head>
 <body>
-
 <div class="wrap">
   <header>
     <div class="eyebrow">Cardinal Badminton Club · Derby City selection</div>
     <h1>Tryout Draw</h1>
-    <p class="lede">Paste the names, draw the matchups, then enter scores at the court. Every match is best of 3 games to 15. Singles is winners-play-winners: round 1 is random, then each round pairs players with the same record, so nobody is knocked out. With an odd number of players, the lowest-ranked player who hasn't sat out yet gets the bye, which never counts as a win. Men's and women's events run side by side on their own courts, and mixed doubles uses every court at the end. Standings update as you go, with a line at the selection cutoff.</p>
+    <p class="lede">Enter the roster once. Singles, doubles and mixed each have their own pool and their own draw button, so untick anyone sitting out an event and draw that event on its own. Redrawing one event never clears scores in the others. Every match is best of 3 games to 15. Singles is winners-play-winners: round 1 is random, then players with the same record meet, so nobody is knocked out. With an odd number, the lowest-ranked player who hasn't sat out yet gets the bye, which never counts as a win. Doubles and mixed give everyone a new partner each round.</p>
   </header>
 
-  <section class="setup" aria-label="Setup">
+  <section class="panel" aria-label="Roster and courts">
     <div class="setup-grid">
       <label for="men">Men, one per line
         <textarea id="men" spellcheck="false"></textarea>
@@ -111,98 +136,96 @@ table.stand td.rank{color:var(--muted);width:1%}
     <div class="opts">
       <label for="menCourts">Men's courts<input id="menCourts" type="text" inputmode="numeric"></label>
       <label for="womenCourts">Women's courts<input id="womenCourts" type="text" inputmode="numeric"></label>
-      <label for="menSR">Men's singles rounds<input id="menSR" type="number" min="1" max="12" step="1"></label>
-      <label for="womenSR">Women's singles rounds<input id="womenSR" type="number" min="1" max="12" step="1"></label>
-      <label for="rounds">Doubles rounds<input id="rounds" type="number" min="1" max="20" step="1"></label>
-      <label for="mixedRounds">Mixed rounds<input id="mixedRounds" type="number" min="0" max="20" step="1"></label>
       <label for="menSpots">Men's spots<input id="menSpots" type="number" min="0" max="20" step="1"></label>
       <label for="womenSpots">Women's spots<input id="womenSpots" type="number" min="0" max="20" step="1"></label>
     </div>
     <div class="actions">
-      <button id="draw" class="primary" type="button">Draw new matchups</button>
       <button id="copy" type="button">Copy schedule for WhatsApp</button>
-      <span class="seedline">Draw number <b id="seedShow">-</b>. Share it so everyone knows the draw was random.</span>
+      <span class="hint">Copies every event that has been drawn.</span>
     </div>
     <div class="msg" id="msg" role="status"></div>
   </section>
 
-  <div id="draws" style="display:grid;gap:32px"></div>
+  <div id="events" style="display:grid;gap:44px"></div>
 
-  <section class="section" aria-label="Standings">
-    <div class="section-head"><h2>Standings</h2><p>Ranked by win rate, then points difference per match, then games difference</p></div>
+  <section class="event" aria-label="Standings">
+    <div class="event-head"><h2>Standings</h2><p>Ranked by win rate, then points difference per match, then games difference</p></div>
     <div class="stand-grid">
       <div><div class="stand-title"><h3>Men</h3><span id="menCut"></span></div><div class="table-wrap" id="menTable"></div></div>
       <div><div class="stand-title"><h3>Women</h3><span id="womenCut"></span></div><div class="table-wrap" id="womenTable"></div></div>
     </div>
-    <p class="rules">Doubles partners rotate, so nobody is carried by one strong partner. Each player's record counts every singles and doubles match they played. Ties at the cutoff: check head-to-head singles first, and have a selector who is not in contention make the call.</p>
+    <p class="rules">The overall ranking picks the team. The Singles, Doubles and Mixed columns help set the lineup: who plays which event in each tie, with no one playing more than 2 matches per tie. A dash means the player wasn't in that event's pool; they're ranked on the matches they did play. Ties at the cutoff: check head-to-head singles first, and have a selector who is not in contention make the call.</p>
   </section>
 </div>
 
 <script>
 (function(){
-  const KEY = "cardinal-tryout-v3";
+  const KEY = "cardinal-tryout-v4", OLD_KEY = "cardinal-tryout-v3";
   const $ = s => document.querySelector(s);
+  const EVENTS = [
+    { key: "singles", title: "Singles", btn: "Draw singles" },
+    { key: "doubles", title: "Doubles", btn: "Draw doubles" },
+    { key: "mixed", title: "Mixed doubles", btn: "Draw mixed" }
+  ];
+  const SEC_EVENT = { ms: "singles", ws: "singles", md: "doubles", wd: "doubles", xd: "mixed" };
+  const blankEv = () => ({ seed: null, sections: [], out: [], pool: null, fixed: [] });
   const defaults = {
     men: "Bharadhwaj\nAyan\nRanga\nHarsha\nNikhil",
     women: "Aashna\nAkshaya\nApeksha\nAdvika\nSreshta\nShikha\nMay\nBhavi\nAndrea",
-    menCourts: "1, 2", womenCourts: "3, 4, 5, 6", menSR: 5, womenSR: 4, rounds: 3, mixedRounds: 3, menSpots: 4, womenSpots: 4,
-    seed: null, sections: [], scores: {}
+    menCourts: "1, 2", womenCourts: "3, 4, 5, 6", menSR: 5, womenSR: 5, rounds: 3, mixedRounds: 3, menSpots: 4, womenSpots: 4,
+    scores: {}, ev: { singles: blankEv(), doubles: blankEv(), mixed: blankEv() }
   };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  let S = load();
+
+  function load(){
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return fill(JSON.parse(raw));
+    } catch(e){}
+    // Carry over a draw that is already in progress from the previous version
+    try {
+      const old = localStorage.getItem(OLD_KEY);
+      if (old){
+        const o = JSON.parse(old), s = clone(defaults);
+        ["men", "women", "menCourts", "womenCourts", "menSR", "womenSR", "rounds", "mixedRounds", "menSpots", "womenSpots", "scores"].forEach(k => { if (o[k] != null) s[k] = o[k]; });
+        (o.sections || []).forEach(sec => {
+          const ek = SEC_EVENT[sec.key]; if (!ek) return;
+          if (sec.kind === "swiss") sec.seed = o.seed;
+          s.ev[ek].sections.push(sec); s.ev[ek].seed = o.seed;
+        });
+        return s;
+      }
+    } catch(e){}
+    return clone(defaults);
+  }
+  function fill(s){
+    const out = Object.assign(clone(defaults), s);
+    out.ev = out.ev || {};
+    EVENTS.forEach(e => { out.ev[e.key] = Object.assign(blankEv(), out.ev[e.key] || {}); });
+    out.scores = out.scores || {};
+    return out;
+  }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
   function courtList(text){
     const seen = new Set(), out = [];
     String(text).split(/[^0-9]+/).filter(Boolean).forEach(x => { const n = +x; if (n > 0 && !seen.has(n)){ seen.add(n); out.push(n); } });
     return out;
   }
-  let S = load();
-
-  function load(){
-    try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, defaults, JSON.parse(raw)); } catch(e){}
-    return JSON.parse(JSON.stringify(defaults));
-  }
-  function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
-
   function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function shuffle(arr, rng){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function names(text){
     const seen = new Set(), out = [];
-    text.split(/\n|,/).map(s => s.trim()).filter(Boolean).forEach(n => { const k = n.toLowerCase(); if (!seen.has(k)){ seen.add(k); out.push(n); } });
+    String(text).split(/\n|,/).map(s => s.trim()).filter(Boolean).forEach(n => { const k = n.toLowerCase(); if (!seen.has(k)){ seen.add(k); out.push(n); } });
     return out;
   }
-
-  // Singles round robin: circle method on a random order, then packed onto the courts so every court stays busy
-  function roundRobin(players, courts, rng, prefix, type){
-    let p = shuffle(players, rng);
-    if (p.length % 2) p.push(null);
-    const n = p.length, queue = [];
-    if (n < 2 || !courts.length) return [];
-    for (let r = 0; r < n - 1; r++){
-      const pairs = [];
-      for (let i = 0; i < n / 2; i++){ const a = p[i], b = p[n - 1 - i]; if (a && b) pairs.push(shuffle([a, b], rng)); }
-      shuffle(pairs, rng).forEach(pr => queue.push(pr));
-      p = [p[0], p[n - 1]].concat(p.slice(1, n - 1));
-    }
-    const slots = []; let id = 0, last = new Set();
-    while (queue.length){
-      const busy = new Set(), take = [];
-      // first pass: players who rested last round, second pass: anyone free
-      for (let pass = 0; pass < 2 && take.length < courts.length; pass++){
-        for (let i = 0; i < queue.length && take.length < courts.length; i++){
-          const pr = queue[i]; if (!pr) continue;
-          if (busy.has(pr[0]) || busy.has(pr[1])) continue;
-          if (pass === 0 && (last.has(pr[0]) || last.has(pr[1]))) continue;
-          take.push(pr); busy.add(pr[0]); busy.add(pr[1]); queue[i] = null;
-        }
-      }
-      for (let i = queue.length - 1; i >= 0; i--) if (!queue[i]) queue.splice(i, 1);
-      last = busy;
-      slots.push({
-        label: "Round " + (slots.length + 1),
-        sitting: players.filter(x => !busy.has(x)),
-        matches: take.map((pr, c) => ({ id: prefix + "-" + (++id), court: courts[c], type, a: [pr[0]], b: [pr[1]] }))
-      });
-    }
-    return slots;
-  }
+  function inPool(ek, n){ return !S.ev[ek].out.includes(n); }
+  function pool(ek){ return { men: names(S.men).filter(n => inPool(ek, n)), women: names(S.women).filter(n => inPool(ek, n)) }; }
+  function poolSig(ek){ const p = pool(ek); return p.men.join("|") + "#" + p.women.join("|") + "#" + activeFixed(ek).map(f => f.join("+")).join("|"); }
+  // Fixed pairs whose players are both in this event's pool
+  function activeFixed(ek){ const ev = S.ev[ek]; if (!ev || !ev.fixed) return []; const P = pool(ek), inn = P.men.concat(P.women); return ev.fixed.filter(f => inn.includes(f[0]) && inn.includes(f[1])); }
+  function allSections(){ return EVENTS.flatMap(e => S.ev[e.key].sections); }
 
   // Winners-play-winners singles (Swiss). Round 1 random; later rounds pair equal records, no rematches.
   function swissRecords(sec){
@@ -239,7 +262,7 @@ table.stand td.rank{color:var(--muted);width:1%}
     const rnd = (sec.round || 0) + 1;
     const live = courtList(sec.key === "ms" ? S.menCourts : S.womenCourts);
     if (live.length) sec.courts = live;
-    const rng = mulberry32((S.seed || 1) + rnd * 7919 + sec.prefix.charCodeAt(0));
+    const rng = mulberry32((sec.seed || 1) + rnd * 7919 + sec.prefix.charCodeAt(0));
     const rec = swissRecords(sec);
     let order = shuffle(sec.players, rng);
     if (rnd > 1) order.sort((x, y) => rec[y].w - rec[x].w || rec[y].pd - rec[x].pd);
@@ -271,45 +294,34 @@ table.stand td.rank{color:var(--muted);width:1%}
     return sec.slots.filter(sl => sl.round === sec.round).every(sl => sl.matches.every(m => result(m.id).winner));
   }
 
-  // Rotating doubles: per round, sample many random line-ups and keep the fairest
-  function doubles(men, women, courtNums, rounds, rng, allowed, prefix){
+  // Doubles engine for MD, WD and XD. Fixed pairs always play together; everyone else gets a new partner each round.
+  // Per round it samples 400 line-ups and keeps the fairest: fewest repeat partners and opponents, least-played players first.
+  function teamDraw(all, fixed, floatTeams, courtNums, rounds, rng, prefix, type){
     const courts = courtNums.length;
-    const all = men.concat(women);
-    const played = {}, tc = {}, partner = {}, opp = {};
-    all.forEach(x => { played[x] = 0; tc[x] = { MD: 0, XD: 0, WD: 0 }; });
+    const inFixed = new Set(fixed.flat());
+    const free = x => !inFixed.has(x);
+    const played = {}, partner = {}, opp = {};
+    all.forEach(x => { played[x] = 0; });
     const pk = (a, b) => a < b ? a + "|" + b : b + "|" + a;
     const pc = (a, b) => partner[pk(a, b)] || 0;
     const oc = (a, b) => opp[pk(a, b)] || 0;
-    const teamCost = (t1, t2) => 60 * (pc(t1[0], t1[1]) + pc(t2[0], t2[1])) + 6 * (oc(t1[0], t2[0]) + oc(t1[0], t2[1]) + oc(t1[1], t2[0]) + oc(t1[1], t2[1]));
     const slots = []; let id = 0;
     for (let r = 0; r < rounds; r++){
       let best = null, bestCost = Infinity;
       for (let t = 0; t < 400; t++){
         const key = x => played[x] + rng() * 0.9;
-        const ms = men.map(x => [key(x), x]).sort((a, b) => a[0] - b[0]).map(z => z[1]);
-        const ws = women.map(x => [key(x), x]).sort((a, b) => a[0] - b[0]).map(z => z[1]);
-        let mi = 0, wi = 0; const matches = []; let cost = 0;
-        for (let c = 0; c < courts; c++){
-          const opts = [];
-          if (allowed.includes("MD") && ms.length - mi >= 4) opts.push("MD");
-          if (allowed.includes("XD") && ms.length - mi >= 2 && ws.length - wi >= 2) opts.push("XD");
-          if (allowed.includes("WD") && ws.length - wi >= 4) opts.push("WD");
-          if (!opts.length) break;
-          const type = opts[Math.floor(rng() * opts.length)];
-          let splits;
-          if (type === "MD" || type === "WD"){
-            const g = type === "MD" ? ms.slice(mi, mi + 4) : ws.slice(wi, wi + 4);
-            if (type === "MD") mi += 4; else wi += 4;
-            splits = [[[g[0], g[1]], [g[2], g[3]]], [[g[0], g[2]], [g[1], g[3]]], [[g[0], g[3]], [g[1], g[2]]]];
-          } else {
-            const m = ms.slice(mi, mi + 2), w = ws.slice(wi, wi + 2); mi += 2; wi += 2;
-            splits = [[[m[0], w[0]], [m[1], w[1]]], [[m[0], w[1]], [m[1], w[0]]]];
-          }
-          let bs = null, bc = Infinity;
-          splits.forEach(s => { const cc = teamCost(s[0], s[1]) + rng() * 0.5; if (cc < bc){ bc = cc; bs = s; } });
-          cost += bc;
-          bs.flat().forEach(x => { cost += 3 * played[x] * played[x] + 7 * tc[x][type]; });
-          matches.push({ type, a: bs[0], b: bs[1] });
+        const teams = fixed.map(f => ({ t: f, fixed: true })).concat(floatTeams(free, key).map(f => ({ t: f, fixed: false })));
+        teams.forEach(o => { o.pr = (played[o.t[0]] + played[o.t[1]]) / 2 + rng() * 0.9; });
+        teams.sort((a, b) => a.pr - b.pr);
+        let n = Math.min(2 * courts, teams.length); if (n % 2) n--;
+        const sel = shuffle(teams.slice(0, n), rng);
+        let cost = 0; const matches = [];
+        for (let i = 0; i + 1 < n; i += 2){
+          const A = sel[i], B = sel[i + 1];
+          cost += 60 * ((A.fixed ? 0 : pc(A.t[0], A.t[1])) + (B.fixed ? 0 : pc(B.t[0], B.t[1])));
+          A.t.forEach(x => B.t.forEach(y => { cost += 6 * oc(x, y); }));
+          A.t.concat(B.t).forEach(x => { cost += 3 * played[x] * played[x]; });
+          matches.push({ type, a: A.t.slice(), b: B.t.slice() });
         }
         cost -= 1000 * matches.length;
         if (cost < bestCost){ bestCost = cost; best = matches; }
@@ -318,8 +330,7 @@ table.stand td.rank{color:var(--muted);width:1%}
       const playing = new Set();
       best.forEach((m, c) => {
         m.id = prefix + "-" + (++id); m.court = courtNums[c];
-        const ps = m.a.concat(m.b);
-        ps.forEach(x => { played[x]++; tc[x][m.type]++; playing.add(x); });
+        m.a.concat(m.b).forEach(x => { played[x]++; playing.add(x); });
         partner[pk(m.a[0], m.a[1])] = pc(m.a[0], m.a[1]) + 1;
         partner[pk(m.b[0], m.b[1])] = pc(m.b[0], m.b[1]) + 1;
         m.a.forEach(x => m.b.forEach(y => { opp[pk(x, y)] = oc(x, y) + 1; }));
@@ -328,43 +339,60 @@ table.stand td.rank{color:var(--muted);width:1%}
     }
     return slots;
   }
+  // Floating partners for same-gender doubles: least-played first, random pairing
+  const sameFloat = (list, rng) => (free, key) => {
+    const s = list.filter(free).map(x => [key(x), x]).sort((a, b) => a[0] - b[0]).map(z => z[1]);
+    const sh = shuffle(s.slice(0, s.length - s.length % 2), rng), out = [];
+    for (let i = 0; i + 1 < sh.length; i += 2) out.push([sh[i], sh[i + 1]]);
+    return out;
+  };
+  // Floating partners for mixed: least-played man and woman first, random pairing
+  const mixedFloat = (men, women, rng) => (free, key) => {
+    const sm = men.filter(free).map(x => [key(x), x]).sort((a, b) => a[0] - b[0]).map(z => z[1]);
+    const sw = women.filter(free).map(x => [key(x), x]).sort((a, b) => a[0] - b[0]).map(z => z[1]);
+    const k = Math.min(sm.length, sw.length), ws = shuffle(sw.slice(0, k), rng);
+    return sm.slice(0, k).map((m, i) => [m, ws[i]]);
+  };
 
-  function build(seed){
-    const men = names(S.men), women = names(S.women);
-    const mc = courtList(S.menCourts), wc = courtList(S.womenCourts);
-    const rounds = Math.max(1, Math.min(20, parseInt(S.rounds) || 1));
-    const mixedRounds = Math.max(0, Math.min(20, parseInt(S.mixedRounds) || 0));
-    const rng = mulberry32(seed);
-    const cl = c => "Courts " + c.join(", ");
-    const secs = [];
-    S.seed = seed; S.scores = {};
-    const swiss = (key, title, players, courts, type) => {
-      const sec = { key, kind: "swiss", title, note: "", players, courts, type, prefix: type, total: 0, round: 0, slots: [] };
-      sec.total = totalFor(sec);
-      swissNext(sec); return sec;
-    };
-    if (men.length >= 2 && mc.length) secs.push(swiss("ms", "Men's singles", men, mc, "MS"));
-    if (women.length >= 2 && wc.length) secs.push(swiss("ws", "Women's singles", women, wc, "WS"));
-    if (men.length >= 4 && mc.length){
-      const d = doubles(men, [], mc, rounds, rng, ["MD"], "MD");
-      if (d.length) secs.push({ key: "md", title: "Men's doubles", note: cl(mc) + " · new partner every round", slots: d });
+  const cl = c => "Courts " + c.join(", ");
+  const allCourts = () => courtList(courtList(S.menCourts).concat(courtList(S.womenCourts)).sort((a, b) => a - b).join(","));
+
+  function drawEvent(ek, seed){
+    const ev = S.ev[ek];
+    ev.sections.forEach(sec => sec.slots.forEach(sl => sl.matches.forEach(m => { delete S.scores[m.id]; })));
+    const P = pool(ek), mc = courtList(S.menCourts), wc = courtList(S.womenCourts);
+    const rng = mulberry32(seed), secs = [];
+    if (ek === "singles"){
+      const swiss = (key, title, players, courts, type) => {
+        const sec = { key, kind: "swiss", title, players, courts, type, prefix: type, seed, total: 0, round: 0, slots: [] };
+        sec.total = totalFor(sec); swissNext(sec); return sec;
+      };
+      if (P.men.length >= 2 && mc.length) secs.push(swiss("ms", "Men's singles", P.men, mc, "MS"));
+      if (P.women.length >= 2 && wc.length) secs.push(swiss("ws", "Women's singles", P.women, wc, "WS"));
+    } else if (ek === "doubles"){
+      const rounds = Math.max(1, Math.min(20, parseInt(S.rounds) || 1));
+      if (P.men.length >= 4 && mc.length){
+        const fx = activeFixed("doubles").filter(f => P.men.includes(f[0]));
+        const d = teamDraw(P.men, fx, sameFloat(P.men, rng), mc, rounds, rng, "MD", "MD");
+        if (d.length) secs.push({ key: "md", title: "Men's doubles", note: cl(mc) + (fx.length ? " · fixed pairs stay together, everyone else rotates" : " · new partner every round"), slots: d });
+      }
+      if (P.women.length >= 4 && wc.length){
+        const fx = activeFixed("doubles").filter(f => P.women.includes(f[0]));
+        const d = teamDraw(P.women, fx, sameFloat(P.women, rng), wc, rounds, rng, "WD", "WD");
+        if (d.length) secs.push({ key: "wd", title: "Women's doubles", note: cl(wc) + (fx.length ? " · fixed pairs stay together, everyone else rotates" : " · new partner every round"), slots: d });
+      }
+    } else {
+      const rounds = Math.max(1, Math.min(20, parseInt(S.mixedRounds) || 1)), ac = allCourts();
+      if (P.men.length >= 2 && P.women.length >= 2 && ac.length){
+        const fx = activeFixed("mixed");
+        const d = teamDraw(P.men.concat(P.women), fx, mixedFloat(P.men, P.women, rng), ac, rounds, rng, "XD", "XD");
+        if (d.length) secs.push({ key: "xd", title: "Mixed doubles", note: cl(ac) + (fx.length ? " · fixed pairs stay together, everyone else rotates" : " · new partner every round"), slots: d });
+      }
     }
-    if (women.length >= 4 && wc.length){
-      const d = doubles([], women, wc, rounds, rng, ["WD"], "WD");
-      if (d.length) secs.push({ key: "wd", title: "Women's doubles", note: cl(wc) + " · new partner every round", slots: d });
-    }
-    const allC = courtList(mc.concat(wc).sort((a, b) => a - b).join(","));
-    if (mixedRounds && men.length >= 2 && women.length >= 2 && allC.length){
-      const d = doubles(men, women, allC, mixedRounds, rng, ["XD"], "XD");
-      if (d.length) secs.push({ key: "xd", title: "Mixed doubles", note: cl(allC) + " · new partner every round", slots: d });
-    }
-    S.sections = secs;
+    ev.seed = seed; ev.sections = secs; ev.pool = poolSig(ek);
     save(); render();
-    const m = [];
-    if (!mc.length || !wc.length) m.push("Enter court numbers for both men and women.");
-    if (men.length < 4) m.push("Men's doubles needs at least 4 men.");
-    if (women.length < 4) m.push("Women's doubles needs at least 4 women.");
-    $("#msg").textContent = m.join(" ");
+    const title = EVENTS.find(e => e.key === ek).title;
+    emsg(ek, secs.length ? title + " drawn." : "Nothing to draw. Check the pool and the court numbers.");
   }
 
   const TYPE = { MS: "Men's singles", WS: "Women's singles", MD: "Men's doubles", XD: "Mixed doubles", WD: "Women's doubles" };
@@ -383,39 +411,103 @@ table.stand td.rank{color:var(--muted);width:1%}
   }
 
   function esc(s){ return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function emsg(ek, t){ const el = document.querySelector('[data-msg="' + ek + '"]'); if (el) el.textContent = t; }
+
+  function eventNote(ek){
+    const mc = courtList(S.menCourts), wc = courtList(S.womenCourts);
+    if (ek === "singles") return "Men on " + cl(mc).toLowerCase() + ", women on " + cl(wc).toLowerCase() + " · winners play winners";
+    if (ek === "doubles") return "Men on " + cl(mc).toLowerCase() + ", women on " + cl(wc).toLowerCase() + " · new partner every round, except fixed pairs";
+    return "All courts · new partner every round, except fixed pairs";
+  }
+  function settingsHtml(ek){
+    const f = (k, label, min) => '<label for="set-' + k + '">' + label + '<input id="set-' + k + '" data-set="' + k + '" type="number" min="' + min + '" max="20" step="1" value="' + esc(S[k]) + '"></label>';
+    if (ek === "singles") return f("menSR", "Men's rounds", 1) + f("womenSR", "Women's rounds", 1);
+    if (ek === "doubles") return f("rounds", "Rounds", 1);
+    return f("mixedRounds", "Rounds", 1);
+  }
+  function infoHtml(ek){
+    const P = pool(ek), w = [];
+    const mc = courtList(S.menCourts), wc = courtList(S.womenCourts);
+    if (ek === "singles"){
+      if (P.men.length < 2) w.push("Men's singles needs 2 men.");
+      if (P.women.length < 2) w.push("Women's singles needs 2 women.");
+      if (!mc.length || !wc.length) w.push("Enter court numbers for men and women.");
+    } else if (ek === "doubles"){
+      if (P.men.length < 4) w.push("Men's doubles needs at least 4 men.");
+      if (P.women.length < 4) w.push("Women's doubles needs at least 4 women.");
+      if (!mc.length || !wc.length) w.push("Enter court numbers for men and women.");
+    } else if (P.men.length < 2 || P.women.length < 2) w.push("Mixed needs at least 2 men and 2 women.");
+    const ev = S.ev[ek];
+    const stale = ev.sections.length && ev.pool && ev.pool !== poolSig(ek);
+    return "In this pool: " + P.men.length + " men, " + P.women.length + " women. " + esc(w.join(" ")) +
+      (stale ? ' <span class="stale">Pool changed since the last draw. Draw again to apply it.</span>' : "");
+  }
+  function fixedInner(ek){
+    const P = pool(ek), fx = S.ev[ek].fixed || [], used = new Set(fx.flat()), inn = P.men.concat(P.women);
+    const list = fx.length ? fx.map((f, i) => {
+      const active = inn.includes(f[0]) && inn.includes(f[1]);
+      return '<span class="pair">' + esc(f[0]) + ' + ' + esc(f[1]) + (active ? '' : ' <em>(not in pool)</em>') +
+        '<button type="button" class="x" data-unfix="' + i + '" data-ev="' + ek + '" aria-label="Remove pair ' + esc(f[0]) + ' and ' + esc(f[1]) + '">×</button></span>';
+    }).join("") : '<span class="hint">None yet. Everyone rotates.</span>';
+    const opt = (arr, ph) => '<option value="">' + ph + '</option>' + arr.filter(n => !used.has(n)).map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join("");
+    const row = (code, label, A, B, pa, pb) => '<div class="fixadd">' + (label ? '<span class="fixlab">' + label + '</span>' : '') +
+      '<select id="fix-' + code + '-a" aria-label="' + pa + ' for fixed pair">' + opt(A, pa) + '</select><span aria-hidden="true">+</span>' +
+      '<select id="fix-' + code + '-b" aria-label="' + pb + ' for fixed pair">' + opt(B, pb) + '</select><button type="button" data-fix="' + code + '">Add pair</button></div>';
+    const rows = ek === "mixed" ? row("xd", "", P.men, P.women, "Choose man", "Choose woman")
+      : row("md", "Men's pair", P.men, P.men, "Choose man", "Choose man") + row("wd", "Women's pair", P.women, P.women, "Choose woman", "Choose woman");
+    return '<span>Fixed pairs (always partner each other)</span><div class="chips">' + list + '</div>' + rows;
+  }
+  function chips(ek, list){
+    if (!list.length) return '<span class="hint">None on the roster.</span>';
+    return list.map(n => '<label class="chip"><input type="checkbox" data-pool="' + ek + '" data-name="' + esc(n) + '"' + (inPool(ek, n) ? " checked" : "") + '>' + esc(n) + '</label>').join("");
+  }
+
+  function sectionHtml(sec){
+    const note = sec.kind === "swiss" ? cl(sec.courts) + " · " + totalFor(sec) + " rounds" : sec.note;
+    let html = '<div class="sub"><div class="sub-head"><h3>' + esc(sec.title) + '</h3><p>' + esc(note) + '</p></div>';
+    sec.slots.forEach(sl => {
+      html += '<div class="slot"><div class="slot-head"><h4>' + esc(sl.label) + '</h4>' +
+        (sl.sitting.length ? '<span class="sitting">Resting: ' + sl.sitting.map(esc).join(", ") + '</span>' : '') + '</div><div class="cards">';
+      sl.matches.forEach(m => {
+        const r = result(m.id), sc = S.scores[m.id] || [];
+        const row = (side, team) => {
+          let cells = '';
+          for (let g = 0; g < 3; g++){
+            const v = (sc[g] || [])[side === "a" ? 0 : 1];
+            cells += '<td class="g"><input inputmode="numeric" type="number" min="0" max="30" step="1" aria-label="' + esc(team.join(" and ")) + ' game ' + (g + 1) + '" data-id="' + m.id + '" data-g="' + g + '" data-s="' + side + '" value="' + (v == null ? "" : esc(v)) + '"></td>';
+          }
+          return '<tr class="side-' + side + (r.winner === side ? " won" : "") + '"><td class="name">' + team.map(esc).join(" / ") + '</td>' + cells + '</tr>';
+        };
+        html += '<div class="card" data-card="' + m.id + '"><div class="card-top"><span>Court ' + m.court + '</span><span class="tag">' + TYPE[m.type] + '</span></div>' +
+          '<table class="board"><thead><tr><td></td><td>G1</td><td>G2</td><td>G3</td></tr></thead><tbody>' + row("a", m.a) + row("b", m.b) + '</tbody></table></div>';
+      });
+      html += '</div></div>';
+    });
+    if (sec.kind === "swiss") html += '<div class="next" data-next-wrap="' + sec.key + '">' + nextHtml(sec) + '</div>';
+    return html + '</div>';
+  }
 
   function render(){
     $("#men").value = S.men; $("#women").value = S.women;
     $("#menCourts").value = S.menCourts; $("#womenCourts").value = S.womenCourts;
-    $("#rounds").value = S.rounds; $("#mixedRounds").value = S.mixedRounds; $("#menSR").value = S.menSR; $("#womenSR").value = S.womenSR;
     $("#menSpots").value = S.menSpots; $("#womenSpots").value = S.womenSpots;
-    $("#seedShow").textContent = S.seed == null ? "-" : S.seed;
-    const host = $("#draws"); host.innerHTML = "";
-    S.sections.forEach(sec => {
-      const el = document.createElement("section"); el.className = "section";
-      const note = sec.kind === "swiss"
-        ? "Courts " + sec.courts.join(", ") + " · winners play winners, " + totalFor(sec) + " rounds"
-        : sec.note;
-      let html = '<div class="section-head"><h2>' + esc(sec.title) + '</h2><p>' + esc(note) + '</p></div>';
-      sec.slots.forEach(sl => {
-        html += '<div class="slot"><div class="slot-head"><h3>' + esc(sl.label) + '</h3>' +
-          (sl.sitting.length ? '<span class="sitting">Resting: ' + sl.sitting.map(esc).join(", ") + '</span>' : '') + '</div><div class="cards">';
-        sl.matches.forEach(m => {
-          const r = result(m.id), sc = S.scores[m.id] || [];
-          const row = (side, team) => {
-            let cells = '';
-            for (let g = 0; g < 3; g++){
-              const v = (sc[g] || [])[side === "a" ? 0 : 1];
-              cells += '<td class="g"><input inputmode="numeric" type="number" min="0" max="30" step="1" aria-label="' + esc(team.join(" and ")) + ' game ' + (g + 1) + '" id="s-' + m.id + '-' + g + '-' + side + '" data-id="' + m.id + '" data-g="' + g + '" data-s="' + side + '" value="' + (v == null ? "" : esc(v)) + '"></td>';
-            }
-            return '<tr class="side-' + side + (r.winner === side ? " won" : "") + '"><td class="name">' + team.map(esc).join(" / ") + '</td>' + cells + '</tr>';
-          };
-          html += '<div class="card" data-card="' + m.id + '"><div class="card-top"><span>Court ' + m.court + '</span><span class="tag">' + TYPE[m.type] + '</span></div>' +
-            '<table class="board"><thead><tr><td></td><td>G1</td><td>G2</td><td>G3</td></tr></thead><tbody>' + row("a", m.a) + row("b", m.b) + '</tbody></table></div>';
-        });
-        html += '</div></div>';
-      });
-      if (sec.kind === "swiss") html += '<div class="next" data-next-wrap="' + sec.key + '">' + nextHtml(sec) + '</div>';
+    const host = $("#events"); host.innerHTML = "";
+    const men = names(S.men), women = names(S.women);
+    EVENTS.forEach(e => {
+      const ev = S.ev[e.key];
+      const el = document.createElement("section"); el.className = "event"; el.setAttribute("aria-label", e.title);
+      let html = '<div class="event-head"><h2>' + esc(e.title) + '</h2><p>' + esc(eventNote(e.key)) + '</p></div>';
+      html += '<div class="panel">' +
+        '<div class="pool-group"><span>Men in this event</span><div class="chips">' + chips(e.key, men) + '</div></div>' +
+        '<div class="pool-group"><span>Women in this event</span><div class="chips">' + chips(e.key, women) + '</div></div>' +
+        (e.key !== "singles" ? '<div class="pool-group" data-fixed="' + e.key + '">' + fixedInner(e.key) + '</div>' : '') +
+        '<p class="info" data-info="' + e.key + '">' + infoHtml(e.key) + '</p>' +
+        '<div class="opts">' + settingsHtml(e.key) + '</div>' +
+        '<div class="actions"><button type="button" class="primary" data-draw="' + e.key + '" data-label="' + e.btn + '">' + (ev.sections.length ? e.btn.replace("Draw", "Redraw") : e.btn) + '</button>' +
+        '<span class="seedline">Draw number <b>' + (ev.seed == null ? "-" : ev.seed) + '</b>. Share it so everyone knows the draw was random.</span></div>' +
+        '<div class="msg" data-msg="' + e.key + '" role="status"></div></div>';
+      if (ev.sections.length) ev.sections.forEach(sec => { html += sectionHtml(sec); });
+      else html += '<p class="notyet">Not drawn yet. Tick who is playing, then draw.</p>';
       el.innerHTML = html; host.appendChild(el);
     });
     standings();
@@ -429,18 +521,18 @@ table.stand td.rank{color:var(--muted);width:1%}
       '<span class="sitting">' + (done ? "Pairs players with the same record. No rematches." : "Enter every round " + sec.round + " score first.") + '</span>';
   }
   function refreshNext(){
-    S.sections.forEach(sec => { if (sec.kind !== "swiss") return; const w = document.querySelector('[data-next-wrap="' + sec.key + '"]'); if (w) w.innerHTML = nextHtml(sec); });
+    allSections().forEach(sec => { if (sec.kind !== "swiss") return; const w = document.querySelector('[data-next-wrap="' + sec.key + '"]'); if (w) w.innerHTML = nextHtml(sec); });
   }
 
   function standings(){
     const men = names(S.men), women = names(S.women);
     const st = {};
-    men.concat(women).forEach(n => st[n] = { n, sw: 0, sl: 0, dw: 0, dl: 0, gw: 0, gl: 0, pf: 0, pa: 0 });
-    S.sections.forEach(sec => sec.slots.forEach(sl => sl.matches.forEach(m => {
+    men.concat(women).forEach(n => st[n] = { n, sw: 0, sl: 0, dw: 0, dl: 0, xw: 0, xl: 0, gw: 0, gl: 0, pf: 0, pa: 0 });
+    allSections().forEach(sec => sec.slots.forEach(sl => sl.matches.forEach(m => {
       const r = result(m.id); if (!r.winner) return;
       const single = m.type === "MS" || m.type === "WS";
       const apply = (team, won, gw, gl, pf, pa) => team.forEach(x => { const o = st[x]; if (!o) return;
-        if (single){ won ? o.sw++ : o.sl++; } else { won ? o.dw++ : o.dl++; }
+        if (single){ won ? o.sw++ : o.sl++; } else if (m.type === "XD"){ won ? o.xw++ : o.xl++; } else { won ? o.dw++ : o.dl++; }
         o.gw += gw; o.gl += gl; o.pf += pf; o.pa += pa; });
       apply(m.a, r.winner === "a", r.aw, r.bw, r.ap, r.bp);
       apply(m.b, r.winner === "b", r.bw, r.aw, r.bp, r.ap);
@@ -452,26 +544,33 @@ table.stand td.rank{color:var(--muted);width:1%}
   function table(rows, spots, sel, cutSel){
     const host = $(sel);
     if (!rows.length){ host.innerHTML = '<div class="empty">No players listed.</div>'; $(cutSel).textContent = ""; return; }
-    rows.forEach(o => { o.p = o.sw + o.sl + o.dw + o.dl; o.w = o.sw + o.dw; o.rate = o.p ? o.w / o.p : -1; o.ppm = o.p ? (o.pf - o.pa) / o.p : 0; });
+    rows.forEach(o => { o.p = o.sw + o.sl + o.dw + o.dl + o.xw + o.xl; o.w = o.sw + o.dw + o.xw; o.rate = o.p ? o.w / o.p : -1; o.ppm = o.p ? (o.pf - o.pa) / o.p : 0; });
     rows.sort((a, b) => b.rate - a.rate || b.ppm - a.ppm || (b.gw - b.gl) - (a.gw - a.gl) || a.n.localeCompare(b.n));
-    let h = '<table class="stand"><thead><tr><th>#</th><th style="text-align:left">Player</th><th>Singles</th><th>Doubles</th><th>Total</th><th>Win %</th><th>Games</th><th>Pts +/-</th></tr></thead><tbody>';
+    const rec = (w, l, ek, n) => (!inPool(ek, n) && w + l === 0) ? '<td class="na">-</td>' : '<td>' + w + '–' + l + '</td>';
+    let h = '<table class="stand"><thead><tr><th>#</th><th style="text-align:left">Player</th><th>Singles</th><th>Doubles</th><th>Mixed</th><th>Total</th><th>Win %</th><th>Games</th><th>Pts +/-</th></tr></thead><tbody>';
     rows.forEach((o, i) => {
       const cls = (i < spots ? "in" : "") + (i === spots - 1 && spots < rows.length ? " cut" : "");
       const diff = o.pf - o.pa;
-      h += '<tr class="' + cls.trim() + '"><td class="rank">' + (i + 1) + '</td><td>' + esc(o.n) + '</td><td>' + o.sw + '–' + o.sl + '</td><td>' + o.dw + '–' + o.dl + '</td><td>' + o.w + '–' + (o.p - o.w) + '</td><td>' + (o.p ? Math.round(o.rate * 100) + '%' : '-') + '</td><td>' + o.gw + '–' + o.gl + '</td><td>' + (diff > 0 ? '+' : '') + diff + '</td></tr>';
+      h += '<tr class="' + cls.trim() + '"><td class="rank">' + (i + 1) + '</td><td>' + esc(o.n) + '</td>' +
+        rec(o.sw, o.sl, "singles", o.n) + rec(o.dw, o.dl, "doubles", o.n) + rec(o.xw, o.xl, "mixed", o.n) +
+        '<td>' + o.w + '–' + (o.p - o.w) + '</td><td>' + (o.p ? Math.round(o.rate * 100) + '%' : '-') + '</td><td>' + o.gw + '–' + o.gl + '</td><td>' + (diff > 0 ? '+' : '') + diff + '</td></tr>';
     });
     host.innerHTML = h + '</tbody></table>';
     $(cutSel).textContent = spots ? "Top " + Math.min(spots, rows.length) + " shaded" : "";
   }
 
-  // Inputs
-  ["men", "women", "menCourts", "womenCourts", "menSR", "womenSR", "rounds", "mixedRounds", "menSpots", "womenSpots"].forEach(k => {
-    $("#" + k).addEventListener("input", e => { S[k] = e.target.value; save(); if (k === "menSpots" || k === "womenSpots") standings(); });
+  // Roster and courts
+  ["men", "women", "menCourts", "womenCourts", "menSpots", "womenSpots"].forEach(k => {
+    $("#" + k).addEventListener("input", e => { S[k] = e.target.value; save(); standings(); });
   });
-  ["menSR", "womenSR"].forEach(k => $("#" + k).addEventListener("change", () => render()));
+  // Rebuild the pools once the roster or courts are done being edited
+  ["men", "women", "menCourts", "womenCourts"].forEach(k => $("#" + k).addEventListener("change", () => render()));
 
-  $("#draws").addEventListener("input", e => {
-    const t = e.target; if (!t.dataset.id) return;
+  const host = $("#events");
+  host.addEventListener("input", e => {
+    const t = e.target;
+    if (t.dataset.set){ S[t.dataset.set] = t.value; save(); return; }
+    if (!t.dataset.id) return;
     const id = t.dataset.id, g = +t.dataset.g, side = t.dataset.s === "a" ? 0 : 1;
     S.scores[id] = S.scores[id] || [[], [], []];
     S.scores[id][g] = S.scores[id][g] || [];
@@ -481,36 +580,80 @@ table.stand td.rank{color:var(--muted);width:1%}
     if (card){ card.querySelector("tr.side-a").classList.toggle("won", r.winner === "a"); card.querySelector("tr.side-b").classList.toggle("won", r.winner === "b"); }
     standings(); refreshNext();
   });
-  $("#draws").addEventListener("click", e => {
-    const b = e.target.closest("[data-next]"); if (!b) return;
-    const sec = S.sections.find(s => s.key === b.dataset.next); if (!sec) return;
-    if (!roundDone(sec)){ $("#msg").textContent = "Enter every round " + sec.round + " score in " + sec.title.toLowerCase() + " first."; return; }
-    swissNext(sec); save(); render(); $("#msg").textContent = sec.title + ": round " + sec.round + " drawn.";
-  });
-
-  let armed = 0;
-  $("#draw").addEventListener("click", () => {
-    const hasScores = Object.values(S.scores).some(m => m.some(g => g && g.some(v => v !== "" && v != null)));
-    if (hasScores && Date.now() - armed > 5000){
-      armed = Date.now();
-      const b = $("#draw"); b.textContent = "Scores will be cleared. Tap again"; b.className = "warn";
-      setTimeout(() => { b.textContent = "Draw new matchups"; b.className = "primary"; }, 5000);
+  host.addEventListener("change", e => {
+    const t = e.target;
+    if (t.dataset.pool){
+      const ev = S.ev[t.dataset.pool], n = t.dataset.name;
+      ev.out = ev.out.filter(x => x !== n);
+      if (!t.checked) ev.out.push(n);
+      save();
+      const info = document.querySelector('[data-info="' + t.dataset.pool + '"]'); if (info) info.innerHTML = infoHtml(t.dataset.pool);
+      const fxEl = document.querySelector('[data-fixed="' + t.dataset.pool + '"]'); if (fxEl) fxEl.innerHTML = fixedInner(t.dataset.pool);
+      standings();
       return;
     }
-    armed = 0; $("#draw").textContent = "Draw new matchups"; $("#draw").className = "primary";
-    build(Math.floor(Math.random() * 900000) + 100000);
+    if (t.dataset.set === "menSR" || t.dataset.set === "womenSR"){
+      refreshNext();
+      allSections().forEach(sec => { if (sec.kind !== "swiss") return; const w = document.querySelector('[data-next-wrap="' + sec.key + '"]'); const p = w && w.parentElement.querySelector(".sub-head p"); if (p) p.textContent = cl(sec.courts) + " · " + totalFor(sec) + " rounds"; });
+    }
+  });
+
+  const armed = {};
+  host.addEventListener("click", e => {
+    const fb = e.target.closest("[data-fix]");
+    if (fb){
+      const code = fb.dataset.fix, ek = code === "xd" ? "mixed" : "doubles", word = ek === "mixed" ? "mixed" : "doubles";
+      const a = $("#fix-" + code + "-a").value, b = $("#fix-" + code + "-b").value;
+      if (!a || !b){ emsg(ek, "Pick both players first."); return; }
+      if (a === b){ emsg(ek, "Pick two different players."); return; }
+      S.ev[ek].fixed = (S.ev[ek].fixed || []).concat([[a, b]]); save(); render();
+      emsg(ek, a + " + " + b + " will always partner each other. Draw " + word + " to apply it.");
+      return;
+    }
+    const ub = e.target.closest("[data-unfix]");
+    if (ub){
+      const ek = ub.dataset.ev, fx = S.ev[ek].fixed || [], f = fx[+ub.dataset.unfix];
+      fx.splice(+ub.dataset.unfix, 1); save(); render();
+      if (f) emsg(ek, "Removed " + f[0] + " + " + f[1] + ". Draw " + (ek === "mixed" ? "mixed" : "doubles") + " to apply it.");
+      return;
+    }
+    const nb = e.target.closest("[data-next]");
+    if (nb){
+      const sec = allSections().find(s => s.key === nb.dataset.next); if (!sec) return;
+      const ek = SEC_EVENT[sec.key];
+      if (!roundDone(sec)){ emsg(ek, "Enter every round " + sec.round + " score in " + sec.title.toLowerCase() + " first."); return; }
+      swissNext(sec); save(); render(); emsg(ek, sec.title + ": round " + sec.round + " drawn.");
+      return;
+    }
+    const db = e.target.closest("[data-draw]"); if (!db) return;
+    const ek = db.dataset.draw, ev = S.ev[ek];
+    const hasScores = ev.sections.some(sec => sec.slots.some(sl => sl.matches.some(m => (S.scores[m.id] || []).some(g => g && g.some(v => v !== "" && v != null)))));
+    if (hasScores && Date.now() - (armed[ek] || 0) > 5000){
+      armed[ek] = Date.now();
+      db.textContent = "Scores in this event will be cleared. Tap again"; db.className = "warn";
+      setTimeout(() => { if (!db.isConnected) return; db.textContent = db.dataset.label.replace("Draw", "Redraw"); db.className = "primary"; }, 5000);
+      return;
+    }
+    armed[ek] = 0;
+    drawEvent(ek, Math.floor(Math.random() * 900000) + 100000);
   });
 
   $("#copy").addEventListener("click", () => {
-    let t = "CARDINAL TRYOUT DRAW (draw #" + S.seed + ")\nAll matches best of 3 games to 15\n";
-    S.sections.forEach(sec => {
-      t += "\n" + sec.title.toUpperCase() + "\n";
-      sec.slots.forEach(sl => {
-        t += sl.label + ": " + sl.matches.map(m => "C" + m.court + " " + m.a.join("/") + " v " + m.b.join("/") + "").join(" | ");
-        if (sl.sitting.length) t += " | Rest: " + sl.sitting.join(", ");
-        t += "\n";
+    let t = "CARDINAL TRYOUT DRAW\nAll matches best of 3 games to 15\n";
+    let any = false;
+    EVENTS.forEach(e => {
+      const ev = S.ev[e.key]; if (!ev.sections.length) return;
+      any = true;
+      ev.sections.forEach(sec => {
+        t += "\n" + sec.title.toUpperCase() + " (draw #" + ev.seed + ")\n";
+        sec.slots.forEach(sl => {
+          t += sl.label + ": " + sl.matches.map(m => "C" + m.court + " " + m.a.join("/") + " v " + m.b.join("/")).join(" | ");
+          if (sl.sitting.length) t += " | Rest: " + sl.sitting.join(", ");
+          t += "\n";
+        });
       });
     });
+    if (!any){ $("#msg").textContent = "Nothing drawn yet."; return; }
     const done = () => { $("#msg").textContent = "Schedule copied."; };
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(t).then(done).catch(() => fallback(t));
@@ -523,8 +666,9 @@ table.stand td.rank{color:var(--muted);width:1%}
     ta.remove();
   }
 
-  if (!S.sections || !S.sections.length) build(Math.floor(Math.random() * 900000) + 100000); else render();
+  render();
 })();
 </script>
+
 </body>
 </html>
