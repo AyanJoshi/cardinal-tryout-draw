@@ -50,6 +50,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .seedline b{font-variant-numeric:tabular-nums;color:var(--ink)}
 .msg{font-size:13px;color:var(--accent);min-height:1em}
 .hint{font-size:13px;color:var(--muted);margin:0}
+#saved.ok::before{content:"● ";color:var(--court)}
+#saved.bad{color:var(--accent);font-weight:600}
+label.filebtn{display:inline-block;font:600 15px var(--body);border-radius:6px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+label.filebtn:has(input:focus-visible){outline:2px solid var(--court);outline-offset:2px}
+label.filebtn input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 
 .event{display:grid;gap:16px}
 .event-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:2px solid var(--ink);padding-bottom:6px}
@@ -141,8 +146,10 @@ table.stand td.rank{color:var(--muted);width:1%}
     </div>
     <div class="actions">
       <button id="copy" type="button">Copy schedule for WhatsApp</button>
-      <span class="hint">Copies every event that has been drawn.</span>
+      <button id="backup" type="button">Download backup</button>
+      <label class="filebtn" for="restoreFile">Restore backup<input id="restoreFile" type="file" accept=".json,application/json"></label>
     </div>
+    <p class="hint" id="saved" role="status">Scores save on this device as you type, so a refresh won't lose them.</p>
     <div class="msg" id="msg" role="status"></div>
   </section>
 
@@ -206,7 +213,16 @@ table.stand td.rank{color:var(--muted);width:1%}
     out.scores = out.scores || {};
     return out;
   }
-  function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+  const clock = d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  function save(){
+    const el = document.getElementById("saved");
+    try {
+      localStorage.setItem(KEY, JSON.stringify(S));
+      if (el){ el.className = "hint ok"; el.textContent = "Saved on this device at " + clock(new Date()) + ". A refresh won't lose anything."; }
+    } catch(e){
+      if (el){ el.className = "hint bad"; el.textContent = "This browser isn't saving (private mode or storage blocked). Download a backup often."; }
+    }
+  }
 
   function courtList(text){
     const seen = new Set(), out = [];
@@ -665,6 +681,47 @@ table.stand td.rank{color:var(--muted);width:1%}
     try { document.execCommand("copy"); $("#msg").textContent = "Schedule copied."; } catch(e){ $("#msg").textContent = "Copy was blocked. Select the matchups on the page instead."; }
     ta.remove();
   }
+
+  // Backup file: works on GitHub Pages (plain download) and inside Claude (downloads capability)
+  const dlReady = (window.claude && typeof window.claude.use === "function") ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+  $("#backup").addEventListener("click", async () => {
+    const now = new Date();
+    const data = JSON.stringify({ app: "cardinal-tryout", version: 4, savedAt: now.toISOString(), state: S }, null, 1);
+    const filename = "tryout-backup-" + now.toISOString().slice(0, 10) + "-" + String(now.getHours()).padStart(2, "0") + String(now.getMinutes()).padStart(2, "0") + ".json";
+    const dl = await dlReady;
+    if (dl){
+      try { await dl.save({ filename, data }); $("#msg").textContent = "Backup saved as " + filename + "."; return; }
+      catch(e){ if (e && (e.code === "declined" || e.code === "rate_limited")){ $("#msg").textContent = "Backup not saved."; return; } }
+    }
+    try {
+      const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+      const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      $("#msg").textContent = "Backup downloaded as " + filename + ".";
+    } catch(e){ $("#msg").textContent = "This browser blocked the download."; }
+  });
+  let pending = null;
+  $("#restoreFile").addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const o = JSON.parse(r.result);
+        if (!o || o.app !== "cardinal-tryout" || !o.state || !o.state.ev) throw 0;
+        pending = o.state;
+        const when = o.savedAt ? new Date(o.savedAt) : null;
+        $("#msg").innerHTML = 'Replace everything on this page with the backup' + (when ? ' from ' + esc(when.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + clock(when)) : '') +
+          '? <button type="button" class="warn" id="restoreYes">Yes, restore</button> <button type="button" id="restoreNo">Cancel</button>';
+      } catch(err){ pending = null; $("#msg").textContent = "That file isn't a Tryout Draw backup."; }
+    };
+    r.onerror = () => { $("#msg").textContent = "Couldn't read that file."; };
+    r.readAsText(f);
+  });
+  $("#msg").addEventListener("click", e => {
+    if (e.target.id === "restoreYes" && pending){ S = fill(pending); pending = null; save(); render(); $("#msg").textContent = "Backup restored."; }
+    else if (e.target.id === "restoreNo"){ pending = null; $("#msg").textContent = "Restore cancelled."; }
+  });
 
   render();
 })();
