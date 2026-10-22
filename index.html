@@ -105,7 +105,8 @@ select:focus-visible{outline:2px solid var(--court);outline-offset:2px}
 .table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 table.stand{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 table.stand th{font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--muted);text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-table.stand th:first-child,table.stand td:first-child{text-align:left}
+table.stand th:first-child,table.stand td:first-child,table.stand td:nth-child(2){text-align:left}
+table.stand td:nth-child(2){font-weight:600}
 table.stand td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
 table.stand td.na{color:var(--muted)}
 table.stand tr.in td{background:var(--court-soft)}
@@ -114,6 +115,9 @@ table.stand td.rank{color:var(--muted);width:1%}
 .stand-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
 .stand-title span{font-size:13px;color:var(--muted)}
 .empty{color:var(--muted);font-size:14px;padding:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{padding:8px 14px;font-size:14px;border-radius:999px;background:var(--sunk)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .rules{font-size:13px;color:var(--muted);margin:0;max-width:75ch}
 
 @media (max-width:720px){ .setup-grid,.stand-grid{grid-template-columns:1fr} }
@@ -157,11 +161,18 @@ table.stand td.rank{color:var(--muted);width:1%}
 
   <section class="event" aria-label="Standings">
     <div class="event-head"><h2>Standings</h2><p>Ranked by win rate, then points difference per match, then games difference</p></div>
+    <div class="tabs" role="tablist" aria-label="Leaderboard">
+      <button type="button" role="tab" data-board="all">Overall</button>
+      <button type="button" role="tab" data-board="singles">Singles</button>
+      <button type="button" role="tab" data-board="doubles">Doubles</button>
+      <button type="button" role="tab" data-board="mixed">Mixed</button>
+    </div>
+    <p class="hint" id="boardNote"></p>
     <div class="stand-grid">
       <div><div class="stand-title"><h3>Men</h3><span id="menCut"></span></div><div class="table-wrap" id="menTable"></div></div>
       <div><div class="stand-title"><h3>Women</h3><span id="womenCut"></span></div><div class="table-wrap" id="womenTable"></div></div>
     </div>
-    <p class="rules">The overall ranking picks the team. The Singles, Doubles and Mixed columns help set the lineup: who plays which event in each tie, with no one playing more than 2 matches per tie. A dash means the player wasn't in that event's pool; they're ranked on the matches they did play. Ties at the cutoff: check head-to-head singles first, and have a selector who is not in contention make the call.</p>
+    <p class="rules">The Overall board picks the team. The Singles, Doubles and Mixed boards rank players within one event and help set the lineup: who plays which event in each tie, with no one playing more than 2 matches per tie. On the Overall board, a dash means the player wasn't in that event's pool; they're ranked on the matches they did play. Ties at the cutoff: check head-to-head singles first, and have a selector who is not in contention make the call.</p>
   </section>
 </div>
 
@@ -540,40 +551,76 @@ table.stand td.rank{color:var(--muted);width:1%}
     allSections().forEach(sec => { if (sec.kind !== "swiss") return; const w = document.querySelector('[data-next-wrap="' + sec.key + '"]'); if (w) w.innerHTML = nextHtml(sec); });
   }
 
+  // Leaderboards: Overall picks the team; Singles, Doubles and Mixed rank players within one event
+  const EVK = ["singles", "doubles", "mixed"];
+  const BOARD_NOTE = {
+    all: "Every match counts. Top spots shaded; this board picks the team.",
+    singles: "Singles matches only. Use it to choose who plays men's and women's singles.",
+    doubles: "Men's and women's doubles only. Partners rotated, so this ranks players, not pairs.",
+    mixed: "Mixed doubles only. Partners rotated, except fixed pairs."
+  };
+  let board = "all";
+  try { const b = localStorage.getItem(KEY + "-board"); if (b && (b === "all" || EVK.includes(b))) board = b; } catch(e){}
+
   function standings(){
     const men = names(S.men), women = names(S.women);
+    const blank = () => ({ w: 0, l: 0, gw: 0, gl: 0, pf: 0, pa: 0 });
     const st = {};
-    men.concat(women).forEach(n => st[n] = { n, sw: 0, sl: 0, dw: 0, dl: 0, xw: 0, xl: 0, gw: 0, gl: 0, pf: 0, pa: 0 });
+    men.concat(women).forEach(n => { st[n] = { n, singles: blank(), doubles: blank(), mixed: blank(), all: blank() }; });
     allSections().forEach(sec => sec.slots.forEach(sl => sl.matches.forEach(m => {
       const r = result(m.id); if (!r.winner) return;
-      const single = m.type === "MS" || m.type === "WS";
+      const ek = (m.type === "MS" || m.type === "WS") ? "singles" : m.type === "XD" ? "mixed" : "doubles";
       const apply = (team, won, gw, gl, pf, pa) => team.forEach(x => { const o = st[x]; if (!o) return;
-        if (single){ won ? o.sw++ : o.sl++; } else if (m.type === "XD"){ won ? o.xw++ : o.xl++; } else { won ? o.dw++ : o.dl++; }
-        o.gw += gw; o.gl += gl; o.pf += pf; o.pa += pa; });
+        [o[ek], o.all].forEach(t => { won ? t.w++ : t.l++; t.gw += gw; t.gl += gl; t.pf += pf; t.pa += pa; }); });
       apply(m.a, r.winner === "a", r.aw, r.bw, r.ap, r.bp);
       apply(m.b, r.winner === "b", r.bw, r.aw, r.bp, r.ap);
     })));
+    document.querySelectorAll("[data-board]").forEach(b => b.setAttribute("aria-selected", b.dataset.board === board ? "true" : "false"));
+    $("#boardNote").textContent = BOARD_NOTE[board];
     table(men.map(n => st[n]), +S.menSpots || 0, "#menTable", "#menCut");
     table(women.map(n => st[n]), +S.womenSpots || 0, "#womenTable", "#womenCut");
   }
 
+  function rankRows(rows, k){
+    rows.forEach(o => { const t = o[k]; o.p = t.w + t.l; o.rate = o.p ? t.w / o.p : -1; o.ppm = o.p ? (t.pf - t.pa) / o.p : 0; o.gd = t.gw - t.gl; });
+    return rows.sort((a, b) => b.rate - a.rate || b.ppm - a.ppm || b.gd - a.gd || a.n.localeCompare(b.n));
+  }
+  const signed = d => (d > 0 ? "+" : "") + d;
+
   function table(rows, spots, sel, cutSel){
     const host = $(sel);
-    if (!rows.length){ host.innerHTML = '<div class="empty">No players listed.</div>'; $(cutSel).textContent = ""; return; }
-    rows.forEach(o => { o.p = o.sw + o.sl + o.dw + o.dl + o.xw + o.xl; o.w = o.sw + o.dw + o.xw; o.rate = o.p ? o.w / o.p : -1; o.ppm = o.p ? (o.pf - o.pa) / o.p : 0; });
-    rows.sort((a, b) => b.rate - a.rate || b.ppm - a.ppm || (b.gw - b.gl) - (a.gw - a.gl) || a.n.localeCompare(b.n));
-    const rec = (w, l, ek, n) => (!inPool(ek, n) && w + l === 0) ? '<td class="na">-</td>' : '<td>' + w + '–' + l + '</td>';
-    let h = '<table class="stand"><thead><tr><th>#</th><th style="text-align:left">Player</th><th>Singles</th><th>Doubles</th><th>Mixed</th><th>Total</th><th>Win %</th><th>Games</th><th>Pts +/-</th></tr></thead><tbody>';
-    rows.forEach((o, i) => {
-      const cls = (i < spots ? "in" : "") + (i === spots - 1 && spots < rows.length ? " cut" : "");
-      const diff = o.pf - o.pa;
-      h += '<tr class="' + cls.trim() + '"><td class="rank">' + (i + 1) + '</td><td>' + esc(o.n) + '</td>' +
-        rec(o.sw, o.sl, "singles", o.n) + rec(o.dw, o.dl, "doubles", o.n) + rec(o.xw, o.xl, "mixed", o.n) +
-        '<td>' + o.w + '–' + (o.p - o.w) + '</td><td>' + (o.p ? Math.round(o.rate * 100) + '%' : '-') + '</td><td>' + o.gw + '–' + o.gl + '</td><td>' + (diff > 0 ? '+' : '') + diff + '</td></tr>';
-    });
+    if (board !== "all") rows = rows.filter(o => inPool(board, o.n) || o[board].w + o[board].l > 0);
+    if (!rows.length){ host.innerHTML = '<div class="empty">No players in this event.</div>'; $(cutSel).textContent = ""; return; }
+    rankRows(rows, board);
+    let h;
+    if (board === "all"){
+      const rec = (t, ek, n) => (!inPool(ek, n) && t.w + t.l === 0) ? '<td class="na">-</td>' : '<td>' + t.w + '–' + t.l + '</td>';
+      h = '<table class="stand"><thead><tr><th>#</th><th style="text-align:left">Player</th><th>Singles</th><th>Doubles</th><th>Mixed</th><th>Total</th><th>Win %</th><th>Games</th><th>Pts +/-</th></tr></thead><tbody>';
+      rows.forEach((o, i) => {
+        const cls = (i < spots ? "in" : "") + (i === spots - 1 && spots < rows.length ? " cut" : ""), t = o.all;
+        h += '<tr class="' + cls.trim() + '"><td class="rank">' + (i + 1) + '</td><td>' + esc(o.n) + '</td>' +
+          rec(o.singles, "singles", o.n) + rec(o.doubles, "doubles", o.n) + rec(o.mixed, "mixed", o.n) +
+          '<td>' + t.w + '–' + t.l + '</td><td>' + (o.p ? Math.round(o.rate * 100) + '%' : '-') + '</td><td>' + t.gw + '–' + t.gl + '</td><td>' + signed(t.pf - t.pa) + '</td></tr>';
+      });
+      $(cutSel).textContent = spots ? "Top " + Math.min(spots, rows.length) + " shaded" : "";
+    } else {
+      h = '<table class="stand"><thead><tr><th>#</th><th style="text-align:left">Player</th><th>W–L</th><th>Win %</th><th>Games</th><th>Pts +/-</th><th>Pts / match</th></tr></thead><tbody>';
+      rows.forEach((o, i) => {
+        const t = o[board];
+        h += '<tr><td class="rank">' + (i + 1) + '</td><td>' + esc(o.n) + '</td><td>' + t.w + '–' + t.l + '</td><td>' + (o.p ? Math.round(o.rate * 100) + '%' : '-') +
+          '</td><td>' + t.gw + '–' + t.gl + '</td><td>' + signed(t.pf - t.pa) + '</td><td>' + (o.p ? signed(Math.round(o.ppm * 10) / 10) : '-') + '</td></tr>';
+      });
+      $(cutSel).textContent = rows.length + " in this event";
+    }
     host.innerHTML = h + '</tbody></table>';
-    $(cutSel).textContent = spots ? "Top " + Math.min(spots, rows.length) + " shaded" : "";
   }
+
+  document.querySelector(".tabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-board]"); if (!b) return;
+    board = b.dataset.board;
+    try { localStorage.setItem(KEY + "-board", board); } catch(err){}
+    standings();
+  });
 
   // Roster and courts
   ["men", "women", "menCourts", "womenCourts", "menSpots", "womenSpots"].forEach(k => {
